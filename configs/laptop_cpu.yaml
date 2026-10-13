@@ -1,0 +1,26 @@
+# For an 8-32GB RAM laptop, no GPU. `--tier` is auto-detected by
+# device.py, but you can force it with `--tier tiny` if detection
+# guesses wrong (e.g. a shared/virtualized machine).
+#
+# Reference values only -- train.py doesn't load this file directly;
+# pass the equivalents as --flags, e.g.:
+#   python -m zivawhite.train --tier tiny --max_steps 3000 --max_lr 3e-4 ...
+tier: tiny
+batch_size: 8
+grad_accum: 8
+max_steps: 3000
+max_lr: 3.0e-4
+min_lr: 3.0e-5
+eval_interval: 250
+ckpt_interval: 500
+notes: >
+  ~2-6M non-embedding parameters, block_size=256 -- but each of those
+  256 positions is now a real BPE token (data/tokenizer/, ~3.9
+  chars/token measured on the bundled corpus), not one raw byte, so
+  the same block_size covers roughly 4x more actual text than before
+  this round. Wall-clock time is highly hardware-dependent (device.py
+  now benchmarks bf16 autocast vs fp32 on your specific CPU at
+  startup and uses whichever measures faster) -- expect it to still be
+  a real span of minutes for 3000 steps on a laptop CPU, not seconds;
+  time your own machine with a short --max_steps run before committing
+  to a long one.

@@ -1,0 +1,6 @@
+-r requirements.txt
+# Only needed to download datasets, verify an export, or upload to the Hugging Face Hub.
+# Training, chatting and serving do not need any of these.
+huggingface_hub>=0.23
+transformers>=4.44          # export_hf --verify loads the exported folder with it
+datasets>=2.19              # data/hf_prepare.py streams Hugging Face datasets with it

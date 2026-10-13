@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ziva White</title>
+<style>
+  :root{
+    --bg:#14171a; --panel:#1b1f23; --panel-2:#20252a; --border:#2a3037;
+    --text:#e9ebed; --muted:#8b939b; --muted-2:#5c646c;
+    --amber:#d8a657; --blue:#6fa3d8; --green:#7fb88a; --violet:#a58ad8;
+    --mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, "SF Mono", Menlo, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
+    display:flex; flex-direction:column;
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .mark{font-family:var(--mono); font-weight:600; letter-spacing:.02em; font-size:15px;}
+  .brand .sub{color:var(--muted); font-size:13px;}
+  #status{font-family:var(--mono); font-size:12px; color:var(--muted); text-align:right; line-height:1.5;}
+  #status .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background:var(--muted-2);}
+  #status .dot.up{background:var(--green);}
+
+  main{
+    flex:1; overflow-y:auto; padding:24px 20px 12px;
+    display:flex; flex-direction:column; gap:18px; max-width:760px; width:100%; margin:0 auto;
+  }
+  .row{display:flex; flex-direction:column; gap:6px; animation:rise .18s ease-out;}
+  @keyframes rise{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+  .row.user .bubble{align-self:flex-end; background:var(--panel-2); border-color:var(--border);}
+  .row.user{align-items:flex-end;}
+  .bubble{
+    border-left:3px solid var(--muted-2); background:var(--panel);
+    border-radius:2px; padding:12px 14px; max-width:92%;
+    white-space:pre-wrap; line-height:1.55; font-size:14.5px;
+  }
+  .row.user .bubble{border-left-color:transparent; border-right:3px solid var(--border);}
+  .meta{
+    font-family:var(--mono); font-size:11.5px; color:var(--muted); display:flex; gap:10px; padding-left:2px;
+  }
+  .meta .route{text-transform:lowercase; font-weight:600;}
+  .route-local{color:var(--amber);}
+  .route-web{color:var(--green);}
+  .bubble.route-local{border-left-color:var(--amber);}
+  .bubble.route-web{border-left-color:var(--green);}
+
+  .empty{color:var(--muted); font-size:13.5px; padding:8px 2px; max-width:520px; line-height:1.6;}
+  .empty code{font-family:var(--mono); background:var(--panel-2); padding:1px 5px; border-radius:3px; font-size:12px;}
+
+  footer{border-top:1px solid var(--border); padding:14px 20px 18px; flex-shrink:0;}
+  form{max-width:760px; margin:0 auto; display:flex; gap:10px; align-items:flex-end;}
+  textarea{
+    flex:1; resize:none; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:11px 13px; font-family:var(--sans); font-size:14.5px; line-height:1.4;
+    max-height:140px; outline:none;
+  }
+  textarea:focus{border-color:var(--amber);}
+  select{
+    background:var(--panel); color:var(--muted); border:1px solid var(--border); border-radius:8px;
+    font-family:var(--mono); font-size:12px; padding:10px 8px; outline:none;
+  }
+  button{
+    background:var(--amber); color:#1a1406; border:none; border-radius:8px; padding:0 18px; height:42px;
+    font-family:var(--sans); font-weight:600; font-size:14px; cursor:pointer;
+  }
+  button:disabled{opacity:.5; cursor:default;}
+  button:focus-visible, textarea:focus-visible, select:focus-visible{outline:2px solid var(--amber); outline-offset:1px;}
+
+  @media (prefers-reduced-motion: reduce){ .row{animation:none;} }
+
+  .headerRight{display:flex; align-items:center; gap:12px;}
+  #settingsBtn{
+    background:transparent; border:1px solid var(--border); color:var(--muted); height:30px; width:30px;
+    padding:0; border-radius:6px; font-size:15px; line-height:1;
+  }
+  #settingsBtn:hover{color:var(--text); border-color:var(--muted);}
+  .settingsPanel{
+    display:flex; align-items:center; gap:10px; padding:10px 20px; border-bottom:1px solid var(--border);
+    background:var(--panel-2); font-size:13px;
+  }
+  .settingsPanel.hidden{display:none;}
+  .settingsPanel label{color:var(--muted); font-family:var(--mono); font-size:12px;}
+  .settingsPanel input{
+    flex:1; max-width:360px; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:7px 10px; font-family:var(--mono); font-size:12.5px; outline:none;
+  }
+  .settingsPanel .hint{color:var(--muted-2); font-size:11.5px;}
+
+  .row.errored .bubble{border-left-color:#c26b5e; color:#e0b3ab;}
+
+
+  /* assistant kinds: identity / control / confirm / timer share the existing bubble language */
+  .route-identity{color:var(--violet);} .bubble.route-identity{border-left-color:var(--violet);}
+  .route-control{color:var(--blue);}   .bubble.route-control{border-left-color:var(--blue);}
+  .route-confirm{color:var(--amber);}  .bubble.route-confirm{border-left-color:var(--amber);}
+  .route-timer{color:var(--green);}    .bubble.route-timer{border-left-color:var(--green);}
+  .row.failed .bubble{border-left-color:#c26b5e;}
+  .confirmBtns{display:flex; gap:8px; margin-top:2px;}
+  .confirmBtns button{height:30px; padding:0 14px; font-size:13px;}
+  .confirmBtns button.secondary{background:transparent; color:var(--text); border:1px solid var(--border);}
+
+  .voiceBar{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; max-width:760px; margin:0 auto 10px;
+    font-family:var(--mono); font-size:12px;
+  }
+  .pill{
+    background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:999px;
+    height:28px; padding:0 12px; font-family:var(--mono); font-size:12px; font-weight:500;
+  }
+  .pill:hover:not(:disabled){color:var(--text); border-color:var(--muted);}
+  .pill[aria-pressed="true"]{color:#1a1406; background:var(--amber); border-color:var(--amber);}
+  .pill.listening{color:#1a1406; background:var(--green); border-color:var(--green);}
+  #voiceState{color:var(--muted); margin-left:auto;}
+  #micBtn{background:var(--panel); color:var(--text); border:1px solid var(--border); width:42px; padding:0; font-size:17px;}
+  #micBtn.listening{background:var(--green); color:#10200f; border-color:var(--green);}
+  .settingsPanel .privacy{color:var(--muted-2); font-size:11.5px; line-height:1.5; flex-basis:100%;}
+  .settingsPanel{flex-wrap:wrap;}
+
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="mark">Ziva White</span>
+      <span class="sub" id="sub">assistant</span>
+    </div>
+    <div class="headerRight">
+      <div id="status"><span class="dot"></span>connecting…</div>
+      <button type="button" id="settingsBtn" title="API key (only needed if this server requires one)">⚙</button>
+    </div>
+  </header>
+
+  <div id="settingsPanel" class="settingsPanel hidden">
+    <label for="apiKey">API key</label>
+    <input id="apiKey" type="password" placeholder="only needed if the server was started with an API key set" autocomplete="off">
+    <span class="hint">Stored in this browser only, sent as a Bearer token to this server's own API.</span>
+    <span class="privacy">Voice in this page uses your browser's speech recognition. In Chrome and Edge that audio is
+      processed by the browser vendor's cloud service, so it is not private or offline. For fully offline voice
+      with wake words, enable the local voice loop (<code>voice.enabled</code> in configs/ziva.local.yaml; see README).</span>
+  </div>
+
+  <main id="log" aria-live="polite">
+    <div class="empty" id="empty">
+      Ask anything, or give a command: <code>volume up</code>, <code>open calculator</code>,
+      <code>set a timer for 10 minutes</code>, <code>what time is it</code>. Commands are matched by a fixed
+      grammar and run on the machine this server runs on; everything else goes to the model. The meta line
+      under each answer says which part produced it. Press the mic, or turn on hands-free and say a wake word.
+    </div>
+  </main>
+
+  <footer>
+    <div class="voiceBar" role="group" aria-label="Voice controls">
+      <button type="button" class="pill" id="handsFreeBtn" aria-pressed="false" title="Listen continuously and wake on a wake word">hands-free</button>
+      <button type="button" class="pill" id="speakBtn" aria-pressed="false" title="Read replies aloud">speak replies</button>
+      <button type="button" class="pill" id="stopBtn" title="Stop speaking">stop</button>
+      <span id="voiceState" role="status"></span>
+    </div>
+    <form id="form">
+      <select id="route" title="Which backend answers questions (commands ignore this)">
+        <option value="auto" selected>auto</option>
+        <option value="local">local</option>
+        <option value="web">web</option>
+      </select>
+      <textarea id="input" rows="1" placeholder="Ask or command…" autofocus></textarea>
+      <button type="button" id="micBtn" title="Speak one request" aria-label="Speak one request">&#127908;</button>
+      <button id="send" type="submit">Send</button>
+    </form>
+  </footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const log = $('log'), form = $('form'), input = $('input'), routeSel = $('route'), sendBtn = $('send');
+  const statusEl = $('status'), settingsBtn = $('settingsBtn'), settingsPanel = $('settingsPanel');
+  const micBtn = $('micBtn'), handsFreeBtn = $('handsFreeBtn'), speakBtn = $('speakBtn'), stopBtn = $('stopBtn');
+  const voiceState = $('voiceState'), keyInput = $('apiKey');
+
+  // One id per browser tab, so an "are you sure?" confirmation can only be answered by the tab that was asked.
+  const session = sessionStorage.getItem('zivawhite_session') ||
+      (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+  sessionStorage.setItem('zivawhite_session', session);
+
+  settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('hidden'));
+  keyInput.value = localStorage.getItem('zivawhite_api_key') || '';
+  keyInput.addEventListener('change', () => localStorage.setItem('zivawhite_api_key', keyInput.value));
+  const authHeaders = () => { const k = keyInput.value.trim(); return k ? { 'Authorization': 'Bearer ' + k } : {}; };
+
+  // ---------------------------------------------------------------- rendering (textContent only: model/web text is untrusted)
+  function addRow(role, text, cls){
+    const empty = $('empty'); if (empty) empty.remove();
+    const row = document.createElement('div');
+    row.className = 'row ' + role + (cls ? ' ' + cls : '');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+    return { row, bubble };
+  }
+  function addMeta(r, label, parts){
+    r.bubble.classList.add('route-' + label);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const tag = document.createElement('span');
+    tag.className = 'route route-' + label; tag.textContent = label;
+    meta.appendChild(tag);
+    for (const p of parts.filter(Boolean)) { const sp = document.createElement('span'); sp.textContent = p; meta.appendChild(sp); }
+    r.row.appendChild(meta);
+    log.scrollTop = log.scrollHeight;
+  }
+  function addConfirmButtons(r){
+    const box = document.createElement('div'); box.className = 'confirmBtns';
+    for (const [label, say, secondary] of [['Yes, do it', 'yes', false], ['No', 'no', true]]) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      if (secondary) b.className = 'secondary';
+      b.addEventListener('click', () => { box.remove(); send(say); });
+      box.appendChild(b);
+    }
+    r.row.appendChild(box);
+  }
+
+  // ------------------------------------------------------------------------------------------------ talking to the server
+  async function send(text, spoken = false){
+    text = text.trim(); if (!text) return;
+    addRow('user', text);
+    sendBtn.disabled = true;
+    const pending = addRow('assistant', '…');
+    let reply = null;
+    try{
+      const r = await fetch('/v1/assistant', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ text, session, route: routeSel.value })
+      });
+      const d = await r.json();
+      if (!r.ok){
+        pending.bubble.textContent = r.status === 401 ? 'Unauthorized: this server requires an API key. Enter it above (\u2699).'
+                                                      : (d.error || `Request failed (HTTP ${r.status})`);
+        pending.row.classList.add('errored');
+      } else {
+        reply = d;
+        pending.bubble.textContent = d.text || '(empty response)';
+        if (d.ok === false) pending.row.classList.add('failed');
+        const label = d.kind === 'model' ? (d.route || 'local') : d.kind;
+        addMeta(pending, label, [d.latency_s != null ? d.latency_s.toFixed(2) + 's' : '', (d.sources || []).join(', '), d.reason || '']);
+        if (d.kind === 'confirm') addConfirmButtons(pending);
+      }
+    }catch(err){
+      pending.bubble.textContent = 'Request failed: could not reach the server.';
+      pending.row.classList.add('errored');
+    }
+    sendBtn.disabled = false;
+    if (reply && reply.text) speak(reply.text);
+    return reply;
+  }
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); const t = input.value; input.value = ''; input.style.height = 'auto'; send(t); input.focus(); });
+  input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
+
+  // ---------------------------------------------------------------------------------------------------- info / status / events
+  let info = { assistant_name: 'Ziva White', wake_words: ['hey ziva', 'ziva'], stop_phrases: ['stop'], wake_sensitivity: 0.88 };
+  async function loadInfo(){
+    try{
+      info = await (await fetch('/v1/assistant/info')).json();
+      $('sub').textContent = info.creator && info.creator.name
+        ? `created by ${info.creator.name}` + (info.creator.alias ? ` (${info.creator.alias})` : '') : 'assistant';
+      document.title = info.assistant_name;
+    }catch(e){ /* the defaults above keep the page usable */ }
+  }
+  async function checkHealth(){
+    try{
+      const d = await (await fetch('/v1/health')).json();
+      statusEl.textContent = '';
+      const dot = document.createElement('span'); dot.className = 'dot up'; statusEl.appendChild(dot);
+      statusEl.appendChild(document.createTextNode(`${d.runtime} \u00b7 local model: ${d.local_model_loaded}`));
+    }catch(e){
+      statusEl.textContent = ''; const dot = document.createElement('span'); dot.className = 'dot'; statusEl.appendChild(dot);
+      statusEl.appendChild(document.createTextNode('server unreachable'));
+    }
+    try{ if ((await (await fetch('/v1/version')).json()).auth_required) settingsPanel.classList.remove('hidden'); }catch(e){}
+  }
+  let lastEvent = 0;
+  async function pollEvents(){
+    try{
+      const r = await fetch('/v1/assistant/events?since=' + lastEvent, { headers: authHeaders() });
+      if (!r.ok) return;
+      for (const ev of (await r.json()).events){
+        lastEvent = Math.max(lastEvent, ev.id);
+        const row = addRow('assistant', ev.text);
+        addMeta(row, ev.kind === 'timer' ? 'timer' : 'control', [new Date(ev.ts * 1000).toLocaleTimeString()]);
+        speak(ev.text);
+      }
+    }catch(e){}
+  }
+  loadInfo(); checkHealth(); setInterval(pollEvents, 4000);
+
+  // -------------------------------------------------------------------------------------------------------- speech out
+  const synth = window.speechSynthesis || null;
+  let speakOn = localStorage.getItem('zivawhite_speak') === '1';
+  let speaking = false;
+  function setPressed(btn, on){ btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  setPressed(speakBtn, speakOn);
+  if (!synth) { speakBtn.disabled = true; speakBtn.title = 'This browser has no speech synthesis'; }
+  speakBtn.addEventListener('click', () => { speakOn = !speakOn; localStorage.setItem('zivawhite_speak', speakOn ? '1' : '0'); setPressed(speakBtn, speakOn); if (!speakOn) stopSpeaking(); });
+
+  function speakable(t){
+    return t.replace(/```[\s\S]*?```/g, ' (code omitted) ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/https?:\/\/\S+/g, 'a link').replace(/[*_#>~|`]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 700);
+  }
+  function speak(text){
+    if (!synth || !speakOn) return;
+    const clean = speakable(text); if (!clean) return;
+    synth.cancel();
+    const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
+    speaking = true; pauseRecognitionForSpeech();
+    sentences.forEach((sentence, i) => {
+      const u = new SpeechSynthesisUtterance(sentence);
+      if (i === sentences.length - 1){ u.onend = u.onerror = () => { speaking = false; resumeRecognitionAfterSpeech(); }; }
+      synth.speak(u);
+    });
+  }
+  function stopSpeaking(){ if (synth) synth.cancel(); speaking = false; resumeRecognitionAfterSpeech(); }
+  stopBtn.addEventListener('click', () => { stopSpeaking(); fetch('/v1/voice/stop', { method: 'POST', headers: authHeaders() }).catch(() => {}); });
+
+  // ---------------------------------------------------------------------------------------------- wake words (mirror of voice/wake.py)
+  const normTok = (t) => t.toLowerCase().replace(/[\u2019']/g, '').replace(/[^a-z0-9]+/g, '');
+  function pkey(w){
+    w = w.toLowerCase().replace(/[^a-z]/g, '');
+    for (const [a, b] of [['ph','f'],['sh','s'],['ch','k'],['ck','k'],['qu','kw'],['wh','w'],['kn','n'],['wr','r']]) w = w.split(a).join(b);
+    w = w.replace(/[zvcqxyeow]/g, (c) => ({z:'s', v:'f', c:'k', q:'k', x:'k', y:'i', e:'i', o:'u', w:'u'}[c]));
+    return w.replace(/(.)\1+/g, '$1').replace(/(?<=.)h/g, '');
+  }
+  function lev(a, b){
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let prev = Array.from({length: n + 1}, (_, j) => j);
+    for (let i = 1; i <= m; i++){
+      const cur = [i];
+      for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[n];
+  }
+  const ratio = (a, b) => (!a || !b) ? 0 : 1 - lev(a, b) / Math.max(a.length, b.length);
+  const similarity = (a, b) => Math.max(ratio(a, b), ratio(pkey(a), pkey(b)));
+  function detectWake(transcript){
+    const orig = transcript.trim().split(/\s+/).filter(Boolean);
+    const norm = orig.map(normTok), idx = norm.map((t, i) => t ? i : -1).filter((i) => i >= 0);
+    if (!idx.length) return null;
+    const phrases = (info.wake_words || []).map((w) => ({ w, toks: w.split(/\s+/).map(normTok).filter(Boolean) })).filter((p) => p.toks.length)
+                    .sort((a, b) => b.toks.length - a.toks.length);
+    const sens = info.wake_sensitivity || 0.88; let best = null;
+    for (const p of phrases){
+      const target = p.toks.join('');
+      for (let start = 0; start <= Math.min(2, idx.length - 1); start++){
+        for (const size of new Set([Math.max(1, p.toks.length - 1), p.toks.length, p.toks.length + 1])){
+          if (start + size > idx.length) continue;
+          const score = similarity(idx.slice(start, start + size).map((i) => norm[i]).join(''), target);
+          if (score >= sens && (!best || p.toks.length > best.len || (p.toks.length === best.len && score > best.score)))
+            best = { len: p.toks.length, score, end: start + size };
+        }
+      }
+    }
+    if (!best) return null;
+    const rest = best.end < idx.length ? orig.slice(idx[best.end]).join(' ') : '';
+    return { remainder: rest.replace(/^[\s,.;:!?-]+|[\s,.;:!?-]+$/g, '') };
+  }
+  const isStop = (t) => (info.stop_phrases || []).map((p) => p.toLowerCase()).includes(t.toLowerCase().replace(/[^a-z ]/g, '').trim());
+
+  // ------------------------------------------------------------------------------------------------------ speech in (browser)
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null, handsFree = false, awakeUntil = 0, pttActive = false, wasPausedForSpeech = false;
+  if (!SR){
+    for (const b of [micBtn, handsFreeBtn]) { b.disabled = true; b.title = 'This browser has no speech recognition (try Chrome, Edge or Safari)'; }
+  }
+  const setState = (t) => { voiceState.textContent = t; };
+
+  function newRecognition(continuous){
+    const r = new SR(); r.lang = navigator.language || 'en-US'; r.continuous = continuous; r.interimResults = false; r.maxAlternatives = 1;
+    return r;
+  }
+  // push-to-talk: one request, no wake word needed
+  micBtn.addEventListener('click', () => {
+    if (!SR) return;
+    if (pttActive && recog) { recog.stop(); return; }
+    stopSpeaking();
+    if (handsFree) setHandsFree(false);
+    const r = newRecognition(false); recog = r; pttActive = true;
+    micBtn.classList.add('listening'); setState('listening\u2026');
+    r.onresult = (e) => { const t = e.results[0][0].transcript; input.value = ''; send(t, true); };
+    r.onerror = (e) => { setState(e.error === 'not-allowed' ? 'microphone blocked: allow it in the address bar' : e.error === 'no-speech' ? '' : 'speech error: ' + e.error); };
+    r.onend = () => { pttActive = false; micBtn.classList.remove('listening'); if (!handsFree) setState(''); };
+    try { r.start(); } catch(e) { pttActive = false; micBtn.classList.remove('listening'); }
+  });
+
+  // hands-free: continuous listening; only an utterance that STARTS with a wake word is acted on
+  function startHandsFree(){
+    const r = newRecognition(true); recog = r;
+    r.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++){
+        if (!e.results[i].isFinal) continue;
+        const text = e.results[i][0].transcript.trim(); if (!text) continue;
+        const now = Date.now(), awake = now < awakeUntil;
+        if ((awake || speaking) && isStop(text)) { stopSpeaking(); awakeUntil = 0; setState('listening for wake word'); continue; }
+        const wake = detectWake(text);
+        if (wake){
+          if (!wake.remainder){ awakeUntil = now + 8000; setState('yes?'); if (speakOn) speak('Yes?'); }
+          else { awakeUntil = Date.now() + 6000; send(wake.remainder, true); }
+        } else if (awake){ awakeUntil = Date.now() + 6000; send(text, true); }
+        // otherwise: not for us. Dropped, never sent anywhere by this page.
+      }
+    };
+    r.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){ setHandsFree(false); setState('microphone blocked: allow it in the address bar'); } };
+    r.onend = () => { if (handsFree && !speaking) setTimeout(() => { try { startHandsFree(); } catch(e) {} }, 300); };   // Chrome ends sessions on silence
+    try { r.start(); setState('listening for wake word'); } catch(e) {}
+  }
+  function setHandsFree(on){
+    handsFree = on; setPressed(handsFreeBtn, on);
+    if (on) { stopSpeaking(); startHandsFree(); }
+    else { if (recog) { const r = recog; recog = null; r.onend = null; try { r.abort(); } catch(e) {} } awakeUntil = 0; setState(''); }
+  }
+  handsFreeBtn.addEventListener('click', () => setHandsFree(!handsFree));
+  // half-duplex: don't listen while we talk, or we would wake ourselves
+  function pauseRecognitionForSpeech(){ if (handsFree && recog) { wasPausedForSpeech = true; const r = recog; r.onend = null; try { r.abort(); } catch(e) {} } }
+  function resumeRecognitionAfterSpeech(){ if (wasPausedForSpeech && handsFree) { wasPausedForSpeech = false; setTimeout(() => { if (handsFree) startHandsFree(); }, 400); } }
+</script>
+</body>
+</html>

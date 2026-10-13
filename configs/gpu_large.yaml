@@ -1,0 +1,16 @@
+# Multi-GPU server (e.g. 4-8x A100/H100). Launch with torchrun for DDP:
+#   torchrun --nproc_per_node=<N> -m zivawhite.train --tier large
+tier: large
+batch_size: 64
+grad_accum: 1
+max_steps: 60000
+max_lr: 3.0e-4
+min_lr: 3.0e-5
+eval_interval: 500
+ckpt_interval: 1000
+notes: >
+  ~0.7-1.3B+ parameters, block_size=2048. DDP is wired and tested (a
+  real 2-process torchrun run, see README.md#multi-gpu-for-real) --
+  torchrun sets RANK/LOCAL_RANK/WORLD_SIZE itself, train.py reads them
+  directly, no extra flag needed. --batch_size above is PER PROCESS;
+  effective global batch = batch_size * grad_accum * world_size.

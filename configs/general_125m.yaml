@@ -1,0 +1,18 @@
+# General-purpose ~125M model, one 24GB+ GPU (RTX 3090/4090, A10, L4, A100 ...). Pretraining recipe.
+# python -m zivawhite.app train --config configs/general_125m.yaml --data_dir data/processed --out_dir runs/general-125m \
+#        --tokenizer_dir tokenizers/gen32k
+# Compute-optimal data for this size is ~2.5B tokens; small models keep improving to 10B+ (see `app.py plan`).
+tier: small
+n_layer: 16
+n_embd: 768
+n_head: 12
+n_kv_head: 3            # grouped-query attention, 4:1 (a 4x smaller KV cache at inference)
+block_size: 2048
+batch_size: 16          # sequences per GPU per micro-step; lower it (and raise global_batch_tokens' effect) if you run out of memory
+global_batch_tokens: 262144
+max_steps: 40000        # ~10B tokens at 262,144 tokens/step
+max_lr: 6.0e-4          # the GPT-3-small recipe
+min_lr: 6.0e-5
+warmup_steps: 1000
+eval_interval: 500
+ckpt_interval: 1000

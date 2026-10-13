@@ -1,0 +1,12 @@
+# Single GPU, 6-24GB VRAM (RTX 3060/3070/4060/4070/4090, A10, etc.)
+tier: small   # bump to "medium" yourself if you have >=16GB VRAM and want it
+batch_size: 16
+grad_accum: 4
+max_steps: 10000
+max_lr: 3.0e-4
+min_lr: 3.0e-5
+eval_interval: 250
+ckpt_interval: 500
+notes: >
+  ~25-50M parameters, block_size=512. bf16/fp16 autocast used
+  automatically when CUDA is available.
