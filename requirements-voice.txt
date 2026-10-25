@@ -1,0 +1,8 @@
+# Optional: offline voice (microphone in, speaker out, wake words). Install with:
+#     pip install -r requirements-voice.txt
+# Then see "Voice" in README.md for the one manual step (downloading a speech model).
+sounddevice>=0.4.6,<1          # microphone (needs PortAudio: `sudo apt install libportaudio2` on Linux; bundled on Windows/macOS)
+vosk>=0.3.45,<1                # offline speech-to-text (small models, always-on friendly)
+pyttsx3>=2.90,<3               # optional cross-platform voice; the OS's own voice is used if you skip this
+# faster-whisper>=1.0       # optional: much more accurate speech-to-text than Vosk, heavier (set voice.stt.engine)
+pycaw>=20230407; sys_platform == "win32"   # exact volume control on Windows (otherwise approximated with volume keys)

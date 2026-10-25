@@ -1,0 +1,14 @@
+# General-purpose ~1.3B model (the "xl" preset). Needs 80GB cards, or several 24-48GB GPUs under torchrun, and a
+# big token budget to be worth it: ~26B tokens is compute-optimal, and `app.py plan --preset xl ...` says how long.
+# torchrun --nproc_per_node=4 -m zivawhite.train --config configs/general_1b.yaml --data_dir data/processed --out_dir runs/general-1b
+tier: xl
+block_size: 2048
+batch_size: 4
+global_batch_tokens: 524288
+max_steps: 50000
+max_lr: 2.0e-4
+min_lr: 2.0e-5
+warmup_steps: 2000
+eval_interval: 1000
+ckpt_interval: 2000
+grad_ckpt: true

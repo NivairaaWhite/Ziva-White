@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      # CPU-only PyTorch is enough for the tests and far smaller than the default CUDA build.
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt
+      - name: Run the tests
+        run: python -m pytest -q
+      - name: The wheel must be complete (web UI, tokenizer, default config, dependencies)
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        run: |
+          pip install build
+          python -m build --wheel
+          python - <<'PY'
+          import glob, zipfile
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          for need in ("zivawhite/webui/index.html", "zivawhite/data/tokenizer/vocab.json",
+                       "zivawhite/data/tokenizer/merges.txt", "zivawhite/defaults/ziva.yaml"):
+              assert need in names, f"missing from the wheel: {need}"
+          assert not any("ziva.local" in n for n in names), "a private override file is in the wheel"
+          print("wheel ok:", len(names), "files")
+          PY
