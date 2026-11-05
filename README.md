@@ -1,6 +1,6 @@
 # Ziva White
 
-A local assistant built from scratch, created by **Mahasvin S S (Snow White)**. It owns a trainable
+A local assistant built from scratch, created by **Mahasvin S S (Zero White)**. It owns a trainable
 transformer (`ZivaGPT`) and read-only access to live web search. Every answer comes from this
 project's own weights; the web only grounds an answer in current information.
 
